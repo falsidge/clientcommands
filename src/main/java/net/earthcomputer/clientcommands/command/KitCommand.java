@@ -177,10 +177,11 @@ public class KitCommand {
             kits.forEach(compoundTag::put);
             rootTag.putInt("DataVersion", SharedConstants.getGameVersion().getSaveVersion().getId());
             rootTag.put("Kits", compoundTag);
-            Path newFile = File.createTempFile("kits", ".dat", configPath.toFile()).toPath();
+            File newFile = File.createTempFile("kits", ".dat", configPath.toFile());
+            
             NbtIo.write(rootTag, newFile);
-            Path backupFile = configPath.resolve("kits.dat_old");
-            Path currentFile = configPath.resolve("kits.dat");;
+            File backupFile = new File(configPath.toFile(), "kits.dat_old");
+            File currentFile = new File(configPath.toFile(), "kits.dat");
             Util.backupAndReplace(currentFile, newFile, backupFile);
         } catch (IOException e) {
             throw SAVE_FAILED_EXCEPTION.create();
@@ -189,7 +190,7 @@ public class KitCommand {
 
     private static void loadFile() throws IOException {
         kits.clear();
-        NbtCompound rootTag = NbtIo.read(configPath.resolve("kits.dat"));
+        NbtCompound rootTag = NbtIo.read(new File(configPath.toFile(), "kits.dat"));
         if (rootTag == null) {
             return;
         }
@@ -227,7 +228,7 @@ class PreviewScreen extends AbstractInventoryScreen<PlayerScreenHandler> {
 
     @Override
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
+        this.renderBackground(drawContext);
         super.render(drawContext, mouseX, mouseY, delta);
 
         this.drawMouseoverTooltip(drawContext, mouseX, mouseY);

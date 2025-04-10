@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.GroupLayout.Group;
+
 import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
 import static com.mojang.brigadier.arguments.StringArgumentType.*;
 import static dev.xpple.clientarguments.arguments.CItemStackArgumentType.*;
@@ -225,10 +227,10 @@ public class ItemGroupCommand {
             });
             rootTag.putInt("DataVersion", SharedConstants.getGameVersion().getSaveVersion().getId());
             rootTag.put("Groups", compoundTag);
-            Path newFile = File.createTempFile("groups", ".dat", configPath.toFile()).toPath();
+            File newFile = File.createTempFile("groups", ".dat", configPath.toFile());
             NbtIo.write(rootTag, newFile);
-            Path backupFile = configPath.resolve("groups.dat_old");
-            Path currentFile = configPath.resolve("groups.dat");
+            File backupFile = new File(configPath.toFile(), "groups.dat_old");
+            File currentFile = new File(configPath.toFile(), "groups.dat");
             Util.backupAndReplace(currentFile, newFile, backupFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -238,7 +240,7 @@ public class ItemGroupCommand {
 
     private static void loadFile() throws IOException {
         groups.clear();
-        NbtCompound rootTag = NbtIo.read(configPath.resolve("groups.dat"));
+        NbtCompound rootTag = NbtIo.read(new File(configPath.toFile(), "groups.dat"));
         if (rootTag == null) {
             return;
         }

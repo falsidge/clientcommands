@@ -1,31 +1,5 @@
 package net.earthcomputer.clientcommands.command.arguments;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.arguments.ArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.mojang.serialization.JsonOps;
-import net.earthcomputer.clientcommands.mixin.HoverEventActionAccessor;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.command.CommandSource;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextCodecs;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.Util;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,14 +7,31 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
+
+import com.google.common.collect.ImmutableMap;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.minecraft.command.CommandSource;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 
 public class FormattedTextArgumentType implements ArgumentType<MutableText> {
+
     private static final Collection<String> EXAMPLES = Arrays.asList("Earth", "bold{xpple}", "bold{italic{red{nwex}}}");
-    private static final DynamicCommandExceptionType INVALID_CLICK_ACTION = new DynamicCommandExceptionType(action -> Text.translatable("commands.client.invalidClickAction", action));
-    private static final DynamicCommandExceptionType INVALID_HOVER_ACTION = new DynamicCommandExceptionType(action -> Text.translatable("commands.client.invalidHoverAction", action));
-    private static final DynamicCommandExceptionType INVALID_HOVER_EVENT = new DynamicCommandExceptionType(event -> Text.translatable("commands.client.invalidHoverEvent", event));
 
     private FormattedTextArgumentType() {
     }
@@ -197,54 +188,28 @@ public class FormattedTextArgumentType implements ArgumentType<MutableText> {
                 .put("hex", new Styler((s, o) -> s.withColor(TextColor.fromRgb(Integer.parseInt(o.get(0), 16))), 1))
                 .put("insert", new Styler((s, o) -> s.withInsertion(o.get(0)), 1))
 
-                .put("click", new Styler((s, o) -> s.withClickEvent(parseClickEvent(o.get(0), o.get(1))), 2, "change_page", "copy_to_clipboard", "open_file", "open_url", "run_command", "suggest_command"))
-                .put("hover", new Styler((s, o) -> s.withHoverEvent(parseHoverEvent(o.get(0), o.get(1))), 2, "show_entity", "show_item", "show_text"))
+                .put("click", new Styler((s, o) -> s.withClickEvent(new ClickEvent(ClickEvent.Action.byName(o.get(0)), o.get(1))), 2, "change_page", "copy_to_clipboard", "open_file", "open_url", "run_command", "suggest_command"))
+                .put("hover", new Styler((s, o) -> s.withHoverEvent(HoverEvent.Action.byName(o.get(0)).buildHoverEvent(Text.of(o.get(1)))), 2, "show_entity", "show_item", "show_text"))
 
                 // aliases
                 .put("strike", new Styler((s, o) -> s.withFormatting(Formatting.STRIKETHROUGH), 0))
                 .put("magic", new Styler((s, o) -> s.withFormatting(Formatting.OBFUSCATED), 0))
                 .build();
 
-        private final StylerFunc styler;
+        private final BiFunction<Style, List<String>, Style> styler;
         private final MutableText argument;
-        private final List<String> args;
+        private final List<String> optional;
 
-        public FormattedText(StylerFunc styler, MutableText argument, List<String> args) {
+        public FormattedText(BiFunction<Style, List<String>, Style> styler, MutableText argument, List<String> optional) {
             this.styler = styler;
             this.argument = argument;
-            this.args = args;
+            this.optional = optional;
         }
 
-        public MutableText style() throws CommandSyntaxException {
-            return this.argument.setStyle(this.styler.apply(this.argument.getStyle(), this.args));
+        public MutableText style() {
+            return this.argument.setStyle(this.styler.apply(this.argument.getStyle(), this.optional));
         }
 
-        private record Styler(StylerFunc operator, int argumentCount, String... suggestions) {}
-
-        @FunctionalInterface
-        interface StylerFunc {
-            Style apply(Style style, List<String> args) throws CommandSyntaxException;
-        }
-
-        private static final Function<String, ClickEvent.Action> CLICK_EVENT_ACTION_BY_NAME = StringIdentifiable.createMapper(ClickEvent.Action.values(), Function.identity());
-
-        private static ClickEvent parseClickEvent(String name, String value) throws CommandSyntaxException {
-            ClickEvent.Action action = CLICK_EVENT_ACTION_BY_NAME.apply(name);
-            if (action == null) {
-                throw INVALID_CLICK_ACTION.create(name);
-            }
-            return new ClickEvent(action, value);
-        }
-
-        private static HoverEvent parseHoverEvent(String name, String value) throws CommandSyntaxException {
-            HoverEvent.Action<?> action = HoverEvent.Action.UNVALIDATED_CODEC.parse(JsonOps.INSTANCE, new JsonPrimitive(name)).result().orElse(null);
-            if (action == null) {
-                throw INVALID_HOVER_ACTION.create(name);
-            }
-
-            JsonElement text = Util.getResult(TextCodecs.CODEC.encodeStart(JsonOps.INSTANCE, Text.of(value)), IllegalStateException::new);
-            HoverEvent.EventData<?> eventData = Util.getResult(((HoverEventActionAccessor) action).getLegacyCodec().parse(JsonOps.INSTANCE, text), error -> INVALID_HOVER_EVENT.create(value));
-            return new HoverEvent(eventData);
-        }
+        private record Styler(BiFunction<Style, List<String>, Style> operator, int argumentCount, String... suggestions) {}
     }
 }

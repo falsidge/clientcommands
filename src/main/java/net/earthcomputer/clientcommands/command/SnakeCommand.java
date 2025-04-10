@@ -76,13 +76,13 @@ class SnakeGameScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
+        this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.renderBackground(context, mouseX, mouseY, delta);
+    public void renderBackground(DrawContext context) {
+        super.renderBackground(context);
         int startX = (this.width - 289) / 2;
         int startY = (this.height - 289) / 2;
 
