@@ -71,7 +71,7 @@ public class CEnchantCommand {
             if (result.itemThrows() < 0) {
                 source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows.noDummy"));
             } else {
-                source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows", result.itemThrows(), (float)result.itemThrows() / 20f));
+                source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows", result.itemThrows(), (float)result.itemThrows() / (Configs.itemThrowsPerTick * 20)));
             }
             source.sendFeedback(Component.translatable("enchCrack.insn.bookshelves", result.bookshelves()));
             source.sendFeedback(Component.translatable("enchCrack.insn.slot", result.slot() + 1));
@@ -80,7 +80,10 @@ public class CEnchantCommand {
                 source.sendFeedback(Component.literal("- ").append(ench.enchantment.getFullname(ench.level)));
             }
             if (!simulate) {
-                source.sendFeedback(Component.translatable("commands.cenchant.success"));
+                source.sendFeedback(Component.translatable("commands.cenchant.success")
+                        .append(" ")
+                        .append(getCommandTextComponent("commands.client.cancel", "/ctask stop " + result.taskName())));
+
             }
         }
         return Command.SINGLE_SUCCESS;

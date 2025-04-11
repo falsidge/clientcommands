@@ -9,3 +9,5 @@ accessible class net/minecraft/client/renderer/RenderStateShard$LineStateShard
 accessible field net/minecraft/client/DebugQueryHandler transactionId I
 
 accessible method net/minecraft/client/Minecraft openChatScreen (Ljava/lang/String;)V
+
+accessible field net/minecraft/client/gui/components/EditBox maxLength I
