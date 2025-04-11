@@ -41,7 +41,7 @@ public class TaskManager {
         }
     }
 
-    public static void onWorldUnload(boolean isDisconnect) {
+    public static void onLevelUnload(boolean isDisconnect) {
         var oldTasks = new ArrayList<Map.Entry<String, LongTask>>();
         {
             var itr = tasks.entrySet().iterator();

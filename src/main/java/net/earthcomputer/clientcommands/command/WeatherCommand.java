@@ -5,7 +5,7 @@ import com.mojang.brigadier.CommandDispatcher;
 
 import net.earthcomputer.clientcommands.features.ClientWeather;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
 
@@ -23,7 +23,7 @@ public class WeatherCommand {
     private static int executeWeatherClear(FabricClientCommandSource source) {
         ClientWeather.setRain(0);
         ClientWeather.setThunder(0);
-        Text feedback = Text.translatable("commands.weather.set.clear");
+        Component feedback = Component.translatable("commands.weather.set.clear");
         source.sendFeedback(feedback);
         return Command.SINGLE_SUCCESS;
     }
@@ -31,7 +31,7 @@ public class WeatherCommand {
     private static int executeWeatherRain(FabricClientCommandSource source) {
         ClientWeather.setRain(1);
         ClientWeather.setThunder(0);
-        Text feedback = Text.translatable("commands.weather.set.rain");
+        Component feedback = Component.translatable("commands.weather.set.rain");
         source.sendFeedback(feedback);
         return Command.SINGLE_SUCCESS;
     }
@@ -39,7 +39,7 @@ public class WeatherCommand {
     private static int executeWeatherThunder(FabricClientCommandSource source) {
         ClientWeather.setRain(1);
         ClientWeather.setThunder(1);
-        Text feedback = Text.translatable("commands.weather.set.thunder");
+        Component feedback = Component.translatable("commands.weather.set.thunder");
         source.sendFeedback(feedback);
         return Command.SINGLE_SUCCESS;
     }
@@ -47,7 +47,7 @@ public class WeatherCommand {
     private static int executeWeatherReset(FabricClientCommandSource source) {
         ClientWeather.setRain(-1);
         ClientWeather.setThunder(-1);
-        Text feedback = Text.translatable("commands.cweather.reset");
+        Component feedback = Component.translatable("commands.cweather.reset");
         source.sendFeedback(feedback);
         return Command.SINGLE_SUCCESS;
     }

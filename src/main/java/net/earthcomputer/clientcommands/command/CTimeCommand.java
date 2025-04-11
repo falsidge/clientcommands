@@ -5,7 +5,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.earthcomputer.clientcommands.features.ClientTimeModifier;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.SharedConstants;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 import static dev.xpple.clientarguments.arguments.CTimeArgumentType.getCTime;
 import static dev.xpple.clientarguments.arguments.CTimeArgumentType.time;
@@ -39,19 +39,19 @@ public class CTimeCommand {
     }
 
     private static int executeQueryDay(FabricClientCommandSource source) {
-        return executeQuery(source, (int) (source.getWorld().getTimeOfDay() / SharedConstants.TICKS_PER_IN_GAME_DAY % 2147483647L));
+        return executeQuery(source, (int) (source.getWorld().getDayTime() / SharedConstants.TICKS_PER_GAME_DAY % 2147483647L));
     }
 
     private static int executeQueryDayTime(FabricClientCommandSource source) {
-        return executeQuery(source, (int) (source.getWorld().getTimeOfDay() % SharedConstants.TICKS_PER_IN_GAME_DAY));
+        return executeQuery(source, (int) (source.getWorld().getDayTime() % SharedConstants.TICKS_PER_GAME_DAY));
     }
 
     private static int executeQueryGameTime(FabricClientCommandSource source) {
-        return executeQuery(source, (int) (source.getWorld().getTime() % 2147483647L));
+        return executeQuery(source, (int) (source.getWorld().getGameTime() % 2147483647L));
     }
 
     private static int executeQuery(FabricClientCommandSource source, int time) {
-        source.sendFeedback(Text.translatable("commands.time.query", time));
+        source.sendFeedback(Component.translatable("commands.time.query", time));
         return time;
     }
     
@@ -62,7 +62,7 @@ public class CTimeCommand {
     
     private static int executeResetTime(FabricClientCommandSource source) {
         ClientTimeModifier.none();
-        source.sendFeedback(Text.translatable("commands.ctime.reset.success"));
+        source.sendFeedback(Component.translatable("commands.ctime.reset.success"));
         return Command.SINGLE_SUCCESS;
     }
 }

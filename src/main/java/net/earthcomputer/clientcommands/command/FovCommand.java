@@ -5,7 +5,7 @@ import com.mojang.brigadier.CommandDispatcher;
 
 import net.earthcomputer.clientcommands.mixin.SimpleOptionAccessor;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
@@ -23,9 +23,9 @@ public class FovCommand {
     }
 
     private static int setFov(FabricClientCommandSource source, int fov) {
-        ((SimpleOptionAccessor) (Object) source.getClient().options.getFov()).forceSetValue(fov);
+        ((SimpleOptionAccessor) (Object) source.getClient().options.fov()).forceSetValue(fov);
 
-        Text feedback = Text.translatable("commands.cfov.success", fov);
+        Component feedback = Component.translatable("commands.cfov.success", fov);
         source.sendFeedback(feedback);
 
         return Command.SINGLE_SUCCESS;

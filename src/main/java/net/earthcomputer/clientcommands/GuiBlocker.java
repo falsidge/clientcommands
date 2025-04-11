@@ -1,10 +1,9 @@
 package net.earthcomputer.clientcommands;
 
-import net.minecraft.client.gui.screen.Screen;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import net.minecraft.client.gui.screens.Screen;
 
 public abstract class GuiBlocker {
 

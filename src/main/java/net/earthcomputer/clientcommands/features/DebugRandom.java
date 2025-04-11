@@ -8,14 +8,14 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.earthcomputer.clientcommands.ClientCommands;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.random.CheckedRandom;
-import net.minecraft.util.math.random.RandomSeed;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.levelgen.LegacyRandomSource;
+import net.minecraft.world.level.levelgen.RandomSupport;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class DebugRandom extends CheckedRandom {
+public class DebugRandom extends LegacyRandomSource {
     static final Logger LOGGER = LogUtils.getLogger();
 
     public static final EntityType<?> DEBUG_ENTITY_TYPE;
@@ -39,7 +39,7 @@ public class DebugRandom extends CheckedRandom {
         if (debugEntityType == null) {
             DEBUG_ENTITY_TYPE = null;
         } else {
-            DEBUG_ENTITY_TYPE = Registries.ENTITY_TYPE.get(new Identifier(debugEntityType));
+            DEBUG_ENTITY_TYPE = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(debugEntityType));
         }
     }
 
@@ -56,7 +56,7 @@ public class DebugRandom extends CheckedRandom {
     private final DataOutputStream nbtStream;
 
     public DebugRandom(Entity entity) {
-        super(RandomSeed.getSeed());
+        super(RandomSupport.generateUniqueSeed());
         this.entity = entity;
         this.stackTraces.add(this.stackTracesThisTick);
         try {
@@ -87,7 +87,7 @@ public class DebugRandom extends CheckedRandom {
     private void handleStackTrace(int stackTrace) {
         this.stackTracesThisTick.add(stackTrace);
         try {
-            NbtIo.write(firstTick ? new NbtCompound() : entity.writeNbt(new NbtCompound()), nbtStream);
+            NbtIo.write(firstTick ? new CompoundTag() : entity.saveWithoutId(new CompoundTag()), nbtStream);
         } catch (IOException e) {
             throw new AssertionError(e);
         }
@@ -98,7 +98,7 @@ public class DebugRandom extends CheckedRandom {
             this.nbtStream.close();
             Path debugDir = ClientCommands.configDir.resolve("debug");
             Files.createDirectories(debugDir);
-            try (DataOutputStream dataOutput = new DataOutputStream(new GZIPOutputStream(Files.newOutputStream(debugDir.resolve(this.entity.getUuidAsString() + ".dat"))))) {
+            try (DataOutputStream dataOutput = new DataOutputStream(new GZIPOutputStream(Files.newOutputStream(debugDir.resolve(this.entity.getStringUUID() + ".dat"))))) {
                 dataOutput.writeInt(stackTraceById.size());
                 for (String st : stackTraceById) {
                     dataOutput.writeUTF(st);
@@ -112,7 +112,7 @@ public class DebugRandom extends CheckedRandom {
                 }
                 dataOutput.write(this.gzippedNbt.toByteArray());
             }
-            LOGGER.info("Written debug random for " + this.entity.getUuidAsString() + " to file");
+            LOGGER.info("Written debug random for " + this.entity.getStringUUID() + " to file");
         } catch (IOException e) {
             LOGGER.error("Error saving debug source to file", e);
         }
@@ -331,5 +331,5 @@ class DebugRandomSourcePanel extends JPanel {
     }
 }
 
-record RandomCall(int stackTrace, NbtCompound nbt) {
+record RandomCall(int stackTrace, CompoundTag nbt) {
 }
