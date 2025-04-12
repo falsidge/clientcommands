@@ -16,6 +16,7 @@
     "MixinCartographyTableMenu",
     "MixinChatComponent",
     "MixinChatScreen",
+    "MixinClientCommandSourceStack",
     "MixinClientLevel",
     "MixinClientLevelData",
     "MixinClientPacketListener",
