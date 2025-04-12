@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.FrostedIceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -62,6 +63,7 @@ public abstract class MixinLivingEntity extends Entity implements ILivingEntity 
     }
 
     @Inject(method = "baseTick",
+            require = 0,
             slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/tags/FluidTags;WATER:Lnet/minecraft/tags/TagKey;", ordinal = 0)),
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getBlockState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;", ordinal = 0))
     public void onUnderwater(CallbackInfo ci) {

@@ -3,7 +3,6 @@ package net.earthcomputer.clientcommands.command;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import net.earthcomputer.clientcommands.Configs;
-import net.earthcomputer.clientcommands.command.arguments.ItemAndEnchantmentsPredicateArgumentType.ItemAndEnchantmentsPredicate;
 import net.earthcomputer.clientcommands.features.EnchantmentCracker;
 import net.earthcomputer.clientcommands.features.PlayerRandCracker;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -25,8 +24,8 @@ public class CEnchantCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         var cenchant = dispatcher.register(literal("cenchant")
-            .then(argument("itemAndEnchantmentsPredicate", itemAndEnchantmentsPredicate().withEnchantmentPredicate(CEnchantCommand::enchantmentPredicate).constrainMaxLevel())
-                    .executes(ctx -> cenchant(ctx.getSource(), getItemAndEnchantmentsPredicate(ctx, "itemAndEnchantmentsPredicate")))));
+                .then(argument("itemAndEnchantmentsPredicate", itemAndEnchantmentsPredicate().withEnchantmentPredicate(CEnchantCommand::enchantmentPredicate).constrainMaxLevel())
+                        .executes(ctx -> cenchant(ctx.getSource(), getItemAndEnchantmentsPredicate(ctx, "itemAndEnchantmentsPredicate")))));
         FLAG_SIMULATE.addToCommand(dispatcher, cenchant, ctx -> true);
     }
 
@@ -36,56 +35,57 @@ public class CEnchantCommand {
 
     private static int cenchant(FabricClientCommandSource source, ItemAndEnchantmentsPredicate itemAndEnchantmentsPredicate) {
         if (!Configs.getEnchantingPrediction()) {
-            Component text = Component.translatable("commands.cenchant.needEnchantingPrediction")
+            Component component = Component.translatable("commands.cenchant.needEnchantingPrediction")
                     .withStyle(ChatFormatting.RED)
                     .append(" ")
                     .append(getCommandTextComponent("commands.client.enable", "/cconfig clientcommands enchantingPrediction set true"));
-            source.sendFeedback(text);
+            source.sendFeedback(component);
             return Command.SINGLE_SUCCESS;
         }
         if (!Configs.playerCrackState.knowsSeed() && Configs.enchCrackState != EnchantmentCracker.CrackState.CRACKED) {
-            Component text = Component.translatable("commands.cenchant.uncracked")
+            Component component = Component.translatable("commands.cenchant.uncracked")
                     .withStyle(ChatFormatting.RED)
                     .append(" ")
                     .append(getCommandTextComponent("commands.client.crack", "/ccrackrng"));
-            source.sendFeedback(text);
+            source.sendFeedback(component);
             return Command.SINGLE_SUCCESS;
         }
 
         boolean simulate = getFlag(source, FLAG_SIMULATE);
 
-        var result = EnchantmentCracker.manipulateEnchantments(
+        String taskName = EnchantmentCracker.manipulateEnchantments(
                 itemAndEnchantmentsPredicate.item(),
                 itemAndEnchantmentsPredicate.predicate(),
-                simulate
+                simulate,
+                result -> {
+                    if (result == null) {
+                        source.sendFeedback(Component.translatable("commands.cenchant.failed"));
+                        if (Configs.playerCrackState != PlayerRandCracker.CrackState.CRACKED) {
+                            MutableComponent help = Component.translatable("commands.cenchant.help.uncrackedPlayerSeed")
+                                    .append(" ")
+                                    .append(getCommandTextComponent("commands.client.crack", "/ccrackrng"));
+                            sendHelp(help);
+                        }
+                    } else {
+                        if (result.itemThrows() < 0) {
+                            source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows.noDummy"));
+                        } else {
+                            source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows", result.itemThrows(), (float)result.itemThrows() / (Configs.itemThrowsPerTick * 20)));
+                        }
+                        source.sendFeedback(Component.translatable("enchCrack.insn.bookshelves", result.bookshelves()));
+                        source.sendFeedback(Component.translatable("enchCrack.insn.slot", result.slot() + 1));
+                        source.sendFeedback(Component.translatable("enchCrack.insn.enchantments"));
+                        for (EnchantmentInstance ench : result.enchantments()) {
+                            source.sendFeedback(Component.literal("- ").append(ench.enchantment.getFullname(ench.level)));
+                        }
+                    }
+                }
         );
-        if (result == null) {
-            source.sendFeedback(Component.translatable("commands.cenchant.failed"));
-            if (Configs.playerCrackState != PlayerRandCracker.CrackState.CRACKED) {
-                MutableComponent help = Component.translatable("commands.cenchant.help.uncrackedPlayerSeed")
-                    .append(" ")
-                    .append(getCommandTextComponent("commands.client.crack", "/ccrackrng"));
-                sendHelp(help);
-            }
-        } else {
-            if (result.itemThrows() < 0) {
-                source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows.noDummy"));
-            } else {
-                source.sendFeedback(Component.translatable("enchCrack.insn.itemThrows", result.itemThrows(), (float)result.itemThrows() / (Configs.itemThrowsPerTick * 20)));
-            }
-            source.sendFeedback(Component.translatable("enchCrack.insn.bookshelves", result.bookshelves()));
-            source.sendFeedback(Component.translatable("enchCrack.insn.slot", result.slot() + 1));
-            source.sendFeedback(Component.translatable("enchCrack.insn.enchantments"));
-            for (EnchantmentInstance ench : result.enchantments()) {
-                source.sendFeedback(Component.literal("- ").append(ench.enchantment.getFullname(ench.level)));
-            }
-            if (!simulate) {
-                source.sendFeedback(Component.translatable("commands.cenchant.success")
-                        .append(" ")
-                        .append(getCommandTextComponent("commands.client.cancel", "/ctask stop " + result.taskName())));
 
-            }
-        }
+        source.sendFeedback(Component.translatable("commands.cenchant.success")
+                .append(" ")
+                .append(getCommandTextComponent("commands.client.cancel", "/ctask stop " + taskName)));
+
         return Command.SINGLE_SUCCESS;
     }
 
